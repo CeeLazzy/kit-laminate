@@ -1,6 +1,13 @@
 const express = require("express");
 const app = express();
 const PORT = process.env.PORT || 3000;
+const session = require("express-session");
+
+app.use(session({
+  secret: "icl-secret",
+  resave: false,
+  saveUninitialized: true
+}));
 const ExcelJS = require("exceljs");   // KEEP THIS ONE
 const axios = require("axios");       // ADD THIS ONE
 app.use(express.urlencoded({ extended: true }));
@@ -97,7 +104,35 @@ const equipmentLibrary = [
 // =======================
 // SERVER
 // =======================
+app.get("/login", (req, res) => {
+  res.send(`
+    <h2>Login</h2>
+    <form method="POST" action="/login">
+      <input name="username" placeholder="Username" required /><br><br>
+      <input name="password" type="password" placeholder="Password" required /><br><br>
+      <button type="submit">Login</button>
+    </form>
+  `);
+});
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
 
+  if (username === "admin" && password === "1234") {
+    req.session.loggedIn = true;
+    res.redirect("/");
+  } else {
+    res.send("Invalid credentials");
+  }
+});
+app.get("/", (req, res) => {
+  if (!req.session.loggedIn) {
+    return res.redirect("/login");
+  }
+app.get("/logout", (req, res) => {
+  req.session.destroy(() => {
+    res.redirect("/login");
+  });
+});
 app.get("/", (req, res) => {
 
 res.send(`
@@ -192,7 +227,7 @@ textarea {
 <div class="container">
 
 <button onclick="downloadExcel()">Download Excel</button>
-
+<button onclick="window.location.href='/logout'">Logout</button>
 <div class="header">
   <img src="/images/IC_Labs_Logo.png">
   <h1> </h1>
