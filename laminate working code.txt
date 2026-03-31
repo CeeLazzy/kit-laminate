@@ -1,0 +1,340 @@
+const express = require("express");
+const app = express();
+const PORT = 3000;
+
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static("public"));
+
+// =======================
+// STUDY → KIT MAP
+// =======================
+
+const studyToKitsMap = {
+  "ICL-CABNATe-FAMCRU": [
+    "Infant Cohort 3 Screening",
+    "Infant Cohort 3 Visit 2,4,6 Day 3,16,42",
+    "Infant Cohort 3 Visit 3 Day 9",
+    "Infant Cohort 3 Visit 5,EW Day 28"
+  ]
+};
+
+// =======================
+// EQUIPMENT DEFINITIONS
+// =======================
+
+const infantPack = {
+  name: "Infant Phlebotomy Pack 1",
+  img: "/images/infant_phlebotomy_pack.jpg",
+  qty: 1,
+  desc: "Plaster, Webcol, cotton wool, 21G Butterfly and Bulldog",
+  inst: "No Label, No Barcodes"
+};
+
+const edta05 = {
+  name: "0.5ml EDTA Microcontainer",
+  img: "/images/edta_0_5ml.jpg",
+  qty: 1,
+  desc: "EDTA Microtainer",
+  inst: "IC Labs CT Barcode"
+};
+
+const edta08 = {
+  name: "0.8ml EDTA Microcontainer",
+  img: "/images/edta_0_8ml.jpg",
+  qty: 1,
+  desc: "EDTA Microtainer",
+  inst: "IC Labs CT Barcode"
+};
+
+const sst05 = {
+  name: "0.5ml SST Microcontainer",
+  img: "/images/sst_0_5ml.jpg",
+  qty: 1,
+  desc: "SST Microtainer",
+  inst: "IC Labs CT Barcode"
+};
+
+const sst08 = {
+  name: "0.8ml SST Microcontainer",
+  img: "/images/sst_0_8ml.jpg",
+  qty: 1,
+  desc: "SST Microtainer",
+  inst: "IC Labs CT Barcode"
+};
+
+// =======================
+// KIT TEMPLATES
+// =======================
+
+const kitTemplates = {
+  "Infant Cohort 3 Screening": [
+    infantPack, edta05, sst08, edta08, sst05
+  ],
+  "Infant Cohort 3 Visit 2,4,6 Day 3,16,42": [
+    infantPack, sst05
+  ],
+  "Infant Cohort 3 Visit 3 Day 9": [
+    infantPack, sst08
+  ],
+  "Infant Cohort 3 Visit 5,EW Day 28": [
+    infantPack, edta05, sst08, edta08
+  ]
+};
+
+// =======================
+// ALL EQUIPMENT (FOR NEW KIT/STUDY)
+// =======================
+
+const equipmentLibrary = [
+  infantPack, edta05, edta08, sst05, sst08
+];
+
+// =======================
+// SERVER
+// =======================
+
+app.get("/", (req, res) => {
+
+res.send(`
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Kit Laminate</title>
+
+<style>
+
+body {
+  font-family: Arial;
+  background: #f4f6f9;
+  padding: 20px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: auto;
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+}
+
+.header {
+  text-align: center;
+}
+
+.header img {
+  max-width: 300px;
+}
+
+select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th {
+  background: #2c3e50;
+  color: white;
+}
+
+td, th {
+  border: 1px solid #ccc;
+  padding: 8px;
+}
+
+img {
+  width: 70px;
+}
+
+textarea {
+  width: 100%;
+  height: 60px;
+  border: none;
+}
+
+.approval {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+}
+
+.box {
+  width: 48%;
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+  <img src="/images/IC_Labs_Logo.png">
+  <h1>Kit Laminate</h1>
+</div>
+
+<label>Study</label>
+<select onchange="loadStudy(this)">
+  <option value="">Select Study</option>
+  <option value="ICL-CABNATe-FAMCRU">ICL-CABNATe-FAMCRU</option>
+  <option value="NEW_STUDY">+ New Study</option>
+</select>
+
+<label>Kit</label>
+<select id="kitSelect" onchange="loadKit(this)">
+  <option value="">Select Kit</option>
+  <option value="NEW_KIT">+ New Kit</option>
+</select>
+
+<table id="kitTable">
+<tr>
+<th>Equipment</th>
+<th>Image</th>
+<th>Qty</th>
+<th>Description</th>
+<th>Instructions</th>
+</tr>
+</table>
+
+<div class="approval">
+
+<div class="box">
+<h3>Client Approval</h3>
+Approved By: _________<br><br>
+Designation: _________<br><br>
+Date: _________
+</div>
+
+<div class="box">
+<h3>IC Labs Review</h3>
+Checked By: _________<br><br>
+Approved By: _________<br><br>
+Date: _________
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const studyToKitsMap = ${JSON.stringify(studyToKitsMap)};
+const kitTemplates = ${JSON.stringify(kitTemplates)};
+const equipmentLibrary = ${JSON.stringify(equipmentLibrary)};
+
+function loadStudy(select) {
+
+  const kitSelect = document.getElementById("kitSelect");
+
+  kitSelect.innerHTML = '<option value="">Select Kit</option><option value="NEW_KIT">+ New Kit</option>';
+
+  clearTable();
+
+  if (select.value === "NEW_STUDY") {
+    showEquipmentSelector();
+    return;
+  }
+
+  const kits = studyToKitsMap[select.value];
+
+  if (!kits) return;
+
+  kits.forEach(k => {
+    kitSelect.innerHTML += '<option value="' + k + '">' + k + '</option>';
+  });
+
+}
+
+function loadKit(select) {
+
+  clearTable();
+
+  if (select.value === "NEW_KIT") {
+    showEquipmentSelector();
+    return;
+  }
+
+  const kit = kitTemplates[select.value];
+
+  if (!kit) return;
+
+  kit.forEach(addRow);
+
+}
+
+function showEquipmentSelector() {
+
+  clearTable();
+
+  const table = document.getElementById("kitTable");
+
+  equipmentLibrary.forEach(item => {
+
+    const row = document.createElement("tr");
+
+    // FIXED: NO TEMPLATE LITERALS HERE
+    row.innerHTML =
+      '<td>' +
+      '<input type="checkbox" onchange="toggleQty(this)"> ' + item.name +
+      '</td>' +
+      '<td><img src="' + item.img + '"></td>' +
+      '<td><input type="number" value="' + item.qty + '" disabled></td>' +
+      '<td><textarea readonly>' + item.desc + '</textarea></td>' +
+      '<td><textarea readonly>' + item.inst + '</textarea></td>';
+
+    table.appendChild(row);
+
+  });
+
+}
+
+function toggleQty(cb) {
+  const row = cb.closest("tr");
+  const input = row.querySelector("input[type=number]");
+  input.disabled = !cb.checked;
+}
+
+function addRow(item) {
+
+  const table = document.getElementById("kitTable");
+
+  const row = document.createElement("tr");
+
+  row.innerHTML =
+    '<td>' + item.name + '</td>' +
+    '<td><img src="' + item.img + '"></td>' +
+    '<td><input type="number" value="' + item.qty + '"></td>' +
+    '<td><textarea readonly>' + item.desc + '</textarea></td>' +
+    '<td><textarea readonly>' + item.inst + '</textarea></td>';
+
+  table.appendChild(row);
+
+}
+
+function clearTable() {
+  document.getElementById("kitTable").innerHTML =
+  '<tr><th>Equipment</th><th>Image</th><th>Qty</th><th>Description</th><th>Instructions</th></tr>';
+}
+
+</script>
+
+</body>
+</html>
+
+`);
+
+});
+
+app.listen(PORT, () => {
+  console.log("Running on http://localhost:" + PORT);
+});
