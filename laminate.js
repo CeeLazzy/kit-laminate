@@ -1,24 +1,11 @@
 const express = require("express");
 const app = express();
-const session = require("express-session");
-const PORT = process.env.PORT || 3000;
-const puppeteer = require("puppeteer");
-
-const browserConfig = {
-  headless: "new",
-  args: ["--no-sandbox", "--disable-setuid-sandbox"]
-};
+const PORT = process.env.PORT || 3000;\
 const ExcelJS = require("exceljs");   // KEEP THIS ONE
 const axios = require("axios");       // ADD THIS ONE
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.use(express.json()); 
-app.use(session({
-  secret: "icl-secret", // can be anything
-  resave: false,
-  saveUninitialized: true
-}));
-
 
 // =======================
 // STUDY → KIT MAP
@@ -111,32 +98,7 @@ const equipmentLibrary = [
 // SERVER
 // =======================
 
-app.get("/login", (req, res) => {
-  res.send(`
-    <h2>Login</h2>
-    <form method="POST" action="/login">
-      <input name="username" placeholder="Username" required /><br><br>
-      <input name="password" type="password" placeholder="Password" required /><br><br>
-      <button type="submit">Login</button>
-    </form>
-  `);
-});
-
-app.post("/login", (req, res) => {
-  const { username, password } = req.body;
-
-  // simple static login for now
-  if (username === "admin" && password === "1234") {
-    req.session.loggedIn = true;
-    res.redirect("/");
-  } else {
-    res.send("Invalid login credentials");
-  }
-});
 app.get("/", (req, res) => {
-  if (!req.session.loggedIn) {
-    return res.redirect("/login");
-  }
 
 res.send(`
 
@@ -230,7 +192,7 @@ textarea {
 <div class="container">
 
 <button onclick="downloadExcel()">Download Excel</button>
-<button onclick="downloadPDF()">Download PDF</button>
+
 <div class="header">
   <img src="/images/IC_Labs_Logo.png">
   <h1> </h1>
@@ -401,44 +363,7 @@ function clearTable() {
   document.getElementById("kitTable").innerHTML =
     '<tr><th>Equipment</th><th>Image</th><th>Qty</th><th>Description</th><th>Instructions</th></tr>';
 }
-function downloadPDF() {
-  const kitItems = Array.from(document.querySelectorAll("#kitTable tr"))
-    .slice(1)
-    .filter(row => {
-      const checkbox = row.querySelector("input[type=checkbox]");
-      return checkbox ? checkbox.checked : true;
-    })
-    .map(row => {
-      const cells = row.children;
-      const qtyInput = cells[2].querySelector("input");
-      const qty = qtyInput ? qtyInput.value : cells[2].innerText;
 
-      return {
-        name: cells[0].innerText.trim(),
-        qty: qty.trim(),
-        desc: cells[3].querySelector("textarea")?.value.trim() || "",
-        inst: cells[4].querySelector("textarea")?.value.trim() || ""
-      };
-    });
-
-  fetch("/download-pdf", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      studyText: customStudyName || document.getElementById("studySelect").value,
-      kitText: customKitName || document.getElementById("kitSelect").value,
-      items: kitItems
-    })
-  })
-    .then(res => res.blob())
-    .then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "kit-laminate.pdf";
-      a.click();
-    });
-}
 function downloadExcel() {
   const kitItems = Array.from(document.querySelectorAll("#kitTable tr"))
   .slice(1)
@@ -495,59 +420,6 @@ kitText: customKitName || document.getElementById("kitSelect").value,
   })
   .catch(err => console.error("Error downloading Excel:", err));
 }
-
-app.post("/download-pdf", async (req, res) => {
-  try {
-    const { items, studyText, kitText } = req.body;
-
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
-    });
-
-    const page = await browser.newPage();
-
-    let html = `
-      <h1>Kit Laminate</h1>
-      <h3>Study: ${studyText}</h3>
-      <h3>Kit: ${kitText}</h3>
-      <table border="1" cellspacing="0" cellpadding="5">
-        <tr>
-          <th>Equipment</th>
-          <th>Qty</th>
-          <th>Description</th>
-          <th>Instructions</th>
-        </tr>
-    `;
-
-    items.forEach(item => {
-      html += `
-        <tr>
-          <td>${item.name}</td>
-          <td>${item.qty}</td>
-          <td>${item.desc}</td>
-          <td>${item.inst}</td>
-        </tr>
-      `;
-    });
-
-    html += `</table>`;
-
-    await page.setContent(html);
-    const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
-
-    await browser.close();
-
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "attachment; filename=kit.pdf");
-
-    res.send(pdfBuffer);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("PDF generation failed");
-  }
-});
 
 </script>
 
