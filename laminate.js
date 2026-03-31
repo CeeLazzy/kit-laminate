@@ -124,18 +124,21 @@ app.post("/login", (req, res) => {
     res.send("Invalid credentials");
   }
 });
-app.get("/", (req, res) => {
-  if (!req.session.loggedIn) {
-    return res.redirect("/login");
-  }
+
+// LOGOUT
 app.get("/logout", (req, res) => {
   req.session.destroy(() => {
     res.redirect("/login");
   });
 });
-app.get("/", (req, res) => {
 
-res.send(`
+// MAIN PAGE (PROTECTED)
+app.get("/", (req, res) => {
+  if (!req.session.loggedIn) {
+    return res.redirect("/login");
+  }
+
+  res.send(`
 
 <!DOCTYPE html>
 <html>
