@@ -588,7 +588,7 @@ for (let j = 1; j <= 5; j++) {
 
       // Place image in column 2 only (ExcelJS is zero-indexed for coordinates)
 sheet.addImage(imageId, {
-  tl: { col: 1.2, row: excelRow.number - 0 }, // ✅ shifts image into center
+  tl: { col: 1.2, row: excelRow.number - 1 }, // ✅ shifts image into center
   ext: { width: 80, height: 80 }
 });
     } catch (err) {
