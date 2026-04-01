@@ -589,7 +589,7 @@ for (let j = 1; j <= 5; j++) {
       // Place image in column 2 only (ExcelJS is zero-indexed for coordinates)
 sheet.addImage(imageId, {
   tl: { col: 1.2, row: excelRow.number - 0.8 }, // ✅ shifts image into center
-  ext: { width: 80, height: 45 }
+  ext: { width: 100, height: 45 }
 });
     } catch (err) {
       console.error("Error loading image:", item.img, err);
@@ -599,7 +599,7 @@ sheet.addImage(imageId, {
 
   sheet.columns = [
   { width: 30 }, // Equipment
-  { width: 10 }, // Image (more space = better centering)
+  { width: 40 }, // Image (more space = better centering)
   { width: 10 }, // Qty
   { width: 45 }, // Description
   { width: 45 }  // Instructions
