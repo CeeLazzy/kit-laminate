@@ -599,7 +599,7 @@ sheet.addImage(imageId, {
 
   sheet.columns = [
   { width: 30 }, // Equipment
-  { width: 20 }, // Image (more space = better centering)
+  { width: 10 }, // Image (more space = better centering)
   { width: 10 }, // Qty
   { width: 45 }, // Description
   { width: 45 }  // Instructions
