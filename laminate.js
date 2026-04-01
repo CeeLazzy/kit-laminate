@@ -575,7 +575,7 @@ for (let j = 1; j <= 5; j++) {
 
 
   // Set row height to fit image + text
-  excelRow.height = 80;
+  excelRow.height = 100;
 
   // ===== Insert image if exists
   if (item.img) {
